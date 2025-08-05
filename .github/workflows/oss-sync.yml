@@ -1,50 +1,46 @@
 name: Sync Document to Aliyun OSS
 
-# 当有代码推送到 main 分支时，触发此工作流
-# 你可以根据自己的分支名进行调整，比如 'master'
 on:
   push:
     branches:
       - main
 
-# 定义一个名为 "sync-docs" 的任务
 jobs:
   sync-docs:
-    # 任务将在最新的 Ubuntu 虚拟机上运行
     runs-on: ubuntu-latest
     
-    # 任务执行步骤
     steps:
-      # 步骤 1: 检出仓库代码
-      # 这是每个工作流的必备步骤，它将你的代码克隆到虚拟机中
       - name: Checkout repository
         uses: actions/checkout@v4
         
-      # 步骤 2: 将文档同步到阿里云 OSS
       - name: Sync latest docs to Aliyun OSS
-        # 使用你找到的 Sync2OSS Action
-        uses: xcube-studio/sync2oss@v2
-        with:
-          # 必填参数，从 GitHub Secrets 获取
-          accessKeyId: ${{ secrets.AccessKeyId }}
-          accessKeySecret: ${{ secrets.AccessKeySecret }}
-          endpoint: oss-cn-beijing.aliyuncs.com # 替换成你的 OSS Endpoint
-          bucketName: xyp-test-github # 替换成你的 OSS Bucket 名称
+        # 使用 s3-compatible-action，版本号为 v6
+        uses: michaelliao/sync-s3-compatible-action@v6
+        
+        # Action 的参数通过 'env' 来设置，而不是 'with'
+        env:
+          # --- 必填参数 ---
+          # 存储提供商类型：aliyun
+          SYNC_TYPE: aliyun
+          
+          # 你的 OSS Bucket 名称
+          SYNC_BUCKET: xyp-test-github
+          
+          # 你的 OSS Region
+          SYNC_REGION: cn-beijing
+          
+          # OSS Access ID，从 Secrets 中获取
+          SYNC_ACCESS_ID: ${{ secrets.AccessKeyId }}
+          
+          # OSS Access Secret，从 Secrets 中获取
+          SYNC_ACCESS_SECRET: ${{ secrets.AccessKeySecret }}
           
           # --- 可选参数 ---
-          # 设置为 false，表示从本地路径同步，而不是从 GitHub Release 同步
-          fromRelease: false
-          
-          # 设置需要同步的本地目录。'.' 表示整个仓库根目录下的所有文件。
+          # 指定需要同步的本地目录，'.' 表示整个仓库
           # 如果你的文档都在 'docs/' 目录下，这里可以设置为 'docs/'
-          localPath: '.'
+          SYNC_DIR: .
           
-          # 文件在 OSS 上的目标目录。设置 '/' 表示直接存放在 bucket 根目录。
-          # 如果你希望放在某个子目录，比如 'docs/'，可以设置为 'docs/'
-          remoteDir: '/'
-          
-          # 保留最新版本的数量，这里设置为 2，会保留最新2个版本并删除更旧的版本
-          keepCount: 1
-          
-          # 你的 OSS 服务所在区域，根据你的 endpoint 进行匹配
-          region: cn-beijing
+          # 当本地没有，但 OSS 上有的文件，如何处理：
+          # 'keep' (默认)：保留；'delete'：删除
+          # 根据你的需求，如果你想保持 OSS 上的文件和 GitHub 仓库完全一致，可以设置为 'delete'
+          SYNC_OPT_UNUSED: keep
