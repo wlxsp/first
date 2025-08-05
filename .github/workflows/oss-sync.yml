@@ -1,0 +1,35 @@
+name: Sync to OSS
+
+# 当有代码推送到 main 分支时，触发此工作流
+on:
+  push:
+    branches:
+      - main
+
+# 定义一个名为 "sync-docs" 的任务
+jobs:
+  sync-docs:
+    # 运行此任务的虚拟机环境
+    runs-on: ubuntu-latest
+    
+    # 任务执行步骤
+    steps:
+      # 步骤 1: 检出代码
+      # 这将把你的仓库代码克隆到虚拟机中，以便后续操作
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      # 步骤 2: 将文件同步到 OSS
+      # 使用一个现成的 GitHub Action 来完成文件同步
+      - name: Sync files to Aliyun OSS
+        uses: aliyun/oss-sync-action@v1.1
+        with:
+          # 以下参数都从你的 Secret 和仓库配置中获取
+          accessKeyId: ${{ secrets.AccessKeyId }}
+          accessKeySecret: ${{ secrets.AccessKeyId }}
+          bucket: xyp-test-github  # 替换成你的 OSS 存储桶名称
+          endpoint: oss-cn-beijing.aliyuncs.com # 替换成你的 OSS endpoint，例如 oss-cn-beijing.aliyuncs.com
+          # 要同步的本地路径，'.' 表示仓库根目录下的所有文件
+          source: '.'
+          # OSS 上的目标路径
+          target: '/'
