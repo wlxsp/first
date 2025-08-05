@@ -1,6 +1,7 @@
-name: Sync to OSS
+name: Sync Document to Aliyun OSS
 
 # 当有代码推送到 main 分支时，触发此工作流
+# 你可以根据自己的分支名进行调整，比如 'master'
 on:
   push:
     branches:
@@ -9,27 +10,41 @@ on:
 # 定义一个名为 "sync-docs" 的任务
 jobs:
   sync-docs:
-    # 运行此任务的虚拟机环境
+    # 任务将在最新的 Ubuntu 虚拟机上运行
     runs-on: ubuntu-latest
     
     # 任务执行步骤
     steps:
-      # 步骤 1: 检出代码
-      # 这将把你的仓库代码克隆到虚拟机中，以便后续操作
+      # 步骤 1: 检出仓库代码
+      # 这是每个工作流的必备步骤，它将你的代码克隆到虚拟机中
       - name: Checkout repository
         uses: actions/checkout@v4
         
-      # 步骤 2: 将文件同步到 OSS
-      # 使用一个现成的 GitHub Action 来完成文件同步
-      - name: Sync files to Aliyun OSS
-        uses: aliyun/oss-sync-action@v1.1
+      # 步骤 2: 将文档同步到阿里云 OSS
+      - name: Sync latest docs to Aliyun OSS
+        # 使用你找到的 Sync2OSS Action
+        uses: xcube-studio/sync2oss@v2
         with:
-          # 以下参数都从你的 Secret 和仓库配置中获取
+          # 必填参数，从 GitHub Secrets 获取
           accessKeyId: ${{ secrets.AccessKeyId }}
-          accessKeySecret: ${{ secrets.AccessKeyId }}
-          bucket: xyp-test-github  # 替换成你的 OSS 存储桶名称
-          endpoint: oss-cn-beijing.aliyuncs.com # 替换成你的 OSS endpoint，例如 oss-cn-beijing.aliyuncs.com
-          # 要同步的本地路径，'.' 表示仓库根目录下的所有文件
-          source: '.'
-          # OSS 上的目标路径
-          target: '/'
+          accessKeySecret: ${{ secrets.AccessKeySecret }}
+          endpoint: oss-cn-beijing.aliyuncs.com # 替换成你的 OSS Endpoint
+          bucketName: xyp-test-github # 替换成你的 OSS Bucket 名称
+          
+          # --- 可选参数 ---
+          # 设置为 false，表示从本地路径同步，而不是从 GitHub Release 同步
+          fromRelease: false
+          
+          # 设置需要同步的本地目录。'.' 表示整个仓库根目录下的所有文件。
+          # 如果你的文档都在 'docs/' 目录下，这里可以设置为 'docs/'
+          localPath: '.'
+          
+          # 文件在 OSS 上的目标目录。设置 '/' 表示直接存放在 bucket 根目录。
+          # 如果你希望放在某个子目录，比如 'docs/'，可以设置为 'docs/'
+          remoteDir: '/'
+          
+          # 保留最新版本的数量，这里设置为 2，会保留最新2个版本并删除更旧的版本
+          keepCount: 1
+          
+          # 你的 OSS 服务所在区域，根据你的 endpoint 进行匹配
+          region: cn-beijing
